@@ -13,8 +13,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    // [VULNERABILIDAD INTENCIONADA: A02:2021 - Cryptographic Failures]
-    // Secreto estatico predecible y debil
+    // Secreto tomado de la variable de entorno JWT_SECRET
     @Value("${jwt.secret}")
     private String secret;
 
@@ -42,6 +41,10 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public String extraerUsername(String token) {
+        return getClaims(token).getSubject();
     }
 
     public boolean validateToken(String token) {

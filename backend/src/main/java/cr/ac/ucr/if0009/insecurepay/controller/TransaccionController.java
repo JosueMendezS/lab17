@@ -34,18 +34,16 @@ public class TransaccionController {
         return ResponseEntity.ok(transaccionService.obtenerPorCuenta(cuentaId));
     }
 
-    // [VULNERABILIDAD INTENCIONADA: A03:2021 - SQL Injection]
-    // Endpoint para buscar transacciones vulnerable a inyeccion SQL en el parametro 'termino'
     @GetMapping("/buscar")
-    public ResponseEntity<List<TransaccionDto>> buscarPorConcepto(@RequestParam("termino") String termino) {
-        return ResponseEntity.ok(transaccionService.buscarPorConcepto(termino));
+    public ResponseEntity<List<TransaccionDto>> buscarPorTermino(@RequestParam("termino") String termino) {
+        return ResponseEntity.ok(transaccionService.buscarPorTermino(termino));
     }
 
-    // [VULNERABILIDAD INTENCIONADA: A01:2021 - IDOR en Transferencias]
-    // [VULNERABILIDAD INTENCIONADA: A03:2021 - Stored XSS]
     @PostMapping("/transferir")
-    public ResponseEntity<TransaccionDto> transferir(@RequestBody TransferenciaDto dto) {
-        TransaccionDto resultado = transaccionService.transferir(dto);
+    public ResponseEntity<TransaccionDto> transferir(
+            @RequestBody TransferenciaDto dto,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        TransaccionDto resultado = transaccionService.transferir(dto, authHeader);
         return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
     }
 }

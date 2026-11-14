@@ -2,14 +2,17 @@ package cr.ac.ucr.if0009.insecurepay.service;
 
 import cr.ac.ucr.if0009.insecurepay.dto.TransaccionDto;
 import cr.ac.ucr.if0009.insecurepay.dto.TransferenciaDto;
+import cr.ac.ucr.if0009.insecurepay.exception.AccesoDenegadoException;
+import cr.ac.ucr.if0009.insecurepay.exception.RecursoNoEncontradoException;
 import cr.ac.ucr.if0009.insecurepay.model.CuentaBancaria;
 import cr.ac.ucr.if0009.insecurepay.model.Transaccion;
 import cr.ac.ucr.if0009.insecurepay.repository.CuentaRepository;
 import cr.ac.ucr.if0009.insecurepay.repository.TransaccionRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import cr.ac.ucr.if0009.insecurepay.util.JwtUtil;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,13 +23,15 @@ public class TransaccionService {
 
     private final TransaccionRepository transaccionRepository;
     private final CuentaRepository cuentaRepository;
+    private final CuentaService cuentaService;
+    private final JwtUtil jwtUtil;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    public TransaccionService(TransaccionRepository transaccionRepository, CuentaRepository cuentaRepository) {
+    public TransaccionService(TransaccionRepository transaccionRepository, CuentaRepository cuentaRepository,
+                              CuentaService cuentaService, JwtUtil jwtUtil) {
         this.transaccionRepository = transaccionRepository;
         this.cuentaRepository = cuentaRepository;
+        this.cuentaService = cuentaService;
+        this.jwtUtil = jwtUtil;
     }
 
     public List<TransaccionDto> listarTodas() {
@@ -47,41 +52,40 @@ public class TransaccionService {
                 .collect(Collectors.toList());
     }
 
-    // [VULNERABILIDAD INTENCIONADA: A03:2021 - SQL Injection (SQLi)]
-    // Concatenacion insegura directa del parametro en createNativeQuery sin Prepared Statements
-    // Payload tipico de exfiltracion: ' OR '1'='1
-    @SuppressWarnings("unchecked")
-    public List<TransaccionDto> buscarPorConcepto(String termino) {
-        String sql = "SELECT * FROM TRANSACCIONES WHERE concepto_html LIKE '%" + termino 
-                   + "%' OR estado LIKE '%" + termino + "%'";
-
-        System.out.println("[AUDITORIA FORENSE INSECUREPAY] Ejecutando consulta SQL vulnerable: " + sql);
-
-        List<Transaccion> resultados = entityManager.createNativeQuery(sql, Transaccion.class)
-                .getResultList();
-
-        return resultados.stream()
+    // Consulta parametrizada (proteccion contra SQL Injection)
+    public List<TransaccionDto> buscarPorTermino(String termino) {
+        if (termino == null || termino.trim().isEmpty()) {
+            return List.of();
+        }
+        return transaccionRepository
+                .buscarPorTerminoSeguro(termino.trim())
+                .stream()
                 .map(this::convertirADto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    // [VULNERABILIDAD INTENCIONADA: A01:2021 - IDOR en Transferencias Bancarias]
-    // [VULNERABILIDAD INTENCIONADA: A03:2021 - Stored XSS en concepto_html]
     @Transactional
-    public TransaccionDto transferir(TransferenciaDto dto) {
+    public TransaccionDto transferir(TransferenciaDto dto, String authHeader) {
+        String usernameAutenticado = jwtUtil.extraerUsername(cuentaService.extraerToken(authHeader));
+
         if (dto.getMonto() == null || dto.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("El monto a transferir debe ser mayor a cero.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El monto a transferir debe ser mayor a cero.");
         }
 
-        // IDOR: No se valida si cuentaOrigenId pertenece al usuario autenticado en la sesion
         CuentaBancaria cuentaOrigen = cuentaRepository.findById(dto.getCuentaOrigenId())
-                .orElseThrow(() -> new RuntimeException("Cuenta de origen no encontrada con ID: " + dto.getCuentaOrigenId()));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta de origen no encontrada."));
+
+        // Validar que la cuenta de origen pertenece al usuario
+        if (!cuentaOrigen.getUsuario().getUsername().equalsIgnoreCase(usernameAutenticado)) {
+            throw new AccesoDenegadoException(
+                    "Fraude detectado: no puede debitar fondos de cuentas ajenas.");
+        }
 
         CuentaBancaria cuentaDestino = cuentaRepository.findByNumeroCuenta(dto.getNumeroCuentaDestino())
-                .orElseThrow(() -> new RuntimeException("Cuenta de destino no encontrada con numero: " + dto.getNumeroCuentaDestino()));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta de destino no encontrada."));
 
         if (cuentaOrigen.getSaldo().compareTo(dto.getMonto()) < 0) {
-            throw new RuntimeException("Fondos insuficientes en la cuenta de origen seleccionada.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fondos insuficientes en la cuenta de origen seleccionada.");
         }
 
         // Efectuar debito y credito
@@ -90,16 +94,26 @@ public class TransaccionService {
         cuentaRepository.save(cuentaOrigen);
         cuentaRepository.save(cuentaDestino);
 
-        // Guardar transaccion con concepto HTML arbitrario (Stored XSS sink)
         Transaccion transaccion = new Transaccion();
         transaccion.setCuentaOrigen(cuentaOrigen);
         transaccion.setCuentaDestino(cuentaDestino);
         transaccion.setMonto(dto.getMonto());
-        transaccion.setConceptoHtml(dto.getConceptoHtml());
+        transaccion.setConceptoHtml(sanitizarTexto(dto.getConceptoHtml()));
         transaccion.setEstado("COMPLETADA");
 
         Transaccion guardada = transaccionRepository.save(transaccion);
         return convertirADto(guardada);
+    }
+
+    // Escapa etiquetas HTML antes de persistir (defensa en profundidad contra XSS)
+    private String sanitizarTexto(String entrada) {
+        if (entrada == null) return "";
+        return entrada
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
     }
 
     private TransaccionDto convertirADto(Transaccion t) {

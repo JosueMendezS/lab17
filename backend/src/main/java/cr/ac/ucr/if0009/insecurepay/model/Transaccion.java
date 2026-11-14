@@ -25,8 +25,7 @@ public class Transaccion {
 
     // [VULNERABILIDAD INTENCIONADA: A03:2021 - Injection (Stored XSS)]
     // Almacena cadenas HTML y scripts arbitrarios en la base de datos sin sanitizar
-    @Lob
-    @Column(name = "concepto_html")
+    @Column(name = "concepto_html", columnDefinition = "CLOB")
     private String conceptoHtml;
 
     @Column(name = "fecha")

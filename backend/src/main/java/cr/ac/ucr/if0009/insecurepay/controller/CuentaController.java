@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cuentas")
@@ -24,11 +25,24 @@ public class CuentaController {
         return ResponseEntity.ok(cuentaService.listarTodas());
     }
 
-    // [VULNERABILIDAD INTENCIONADA: A01:2021 - IDOR]
-    // Consulta de balance y numero de cuenta por ID sin autenticacion ni autorizacion
     @GetMapping("/{id}")
-    public ResponseEntity<CuentaDto> obtenerPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(cuentaService.obtenerPorId(id));
+    public ResponseEntity<CuentaDto> obtenerPorId(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        return ResponseEntity.ok(cuentaService.obtenerCuentaSegura(id, authHeader));
+    }
+
+    @GetMapping("/{id}/saldo")
+    public ResponseEntity<Map<String, Object>> obtenerSaldo(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        CuentaDto cuenta = cuentaService.obtenerCuentaSegura(id, authHeader);
+        return ResponseEntity.ok(Map.of(
+                "cuentaId", cuenta.getId(),
+                "numeroCuenta", cuenta.getNumeroCuenta(),
+                "saldo", cuenta.getSaldo(),
+                "moneda", cuenta.getMoneda()
+        ));
     }
 
     // [VULNERABILIDAD INTENCIONADA: A01:2021 - BOLA]

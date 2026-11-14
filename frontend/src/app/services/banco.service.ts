@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Cuenta, Transaccion, TransferenciaRequest } from '../models/banco.model';
 
@@ -11,13 +11,19 @@ export class BancoService {
 
   constructor(private http: HttpClient) {}
 
+  // Envia el JWT para que el backend valide la propiedad de los recursos
+  private authHeaders(): HttpHeaders {
+    const user = JSON.parse(localStorage.getItem('insecure_pay_user') || '{}');
+    return new HttpHeaders({ Authorization: `Bearer ${user.token}` });
+  }
+
   obtenerCuentasUsuario(usuarioId: number): Observable<Cuenta[]> {
     return this.http.get<Cuenta[]>(`${this.apiUrl}/cuentas/usuario/${usuarioId}`);
   }
 
   // [VULNERABILIDAD INTENCIONADA: IDOR en Consulta de Cuentas]
   obtenerCuentaPorId(id: number): Observable<Cuenta> {
-    return this.http.get<Cuenta>(`${this.apiUrl}/cuentas/${id}`);
+    return this.http.get<Cuenta>(`${this.apiUrl}/cuentas/${id}`, { headers: this.authHeaders() });
   }
 
   listarTodasLasCuentas(): Observable<Cuenta[]> {
@@ -43,7 +49,7 @@ export class BancoService {
 
   // [VULNERABILIDAD INTENCIONADA: IDOR en Origen de Fondos + Stored XSS]
   transferir(req: TransferenciaRequest): Observable<Transaccion> {
-    return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/transferir`, req);
+    return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/transferir`, req, { headers: this.authHeaders() });
   }
 }
 

@@ -1,14 +1,14 @@
 -- ==============================================================================
 -- Datos Iniciales de Prueba - InsecurePay Digital Banking Portal
--- NOTA: Credenciales almacenadas en TEXTO PLANO intencionalmente para la auditoria
+-- Contrasenas almacenadas con hash BCrypt (work factor 10)
 -- ==============================================================================
 
 INSERT INTO USUARIOS (username, password, nombre_completo, email, rol) VALUES
-('admin', 'admin123', 'Administrador General de Sistemas', 'admin@insecurepay.fi.cr', 'ADMIN'),
-('auditor_seguridad', 'auditor2026', 'Lic. Esteban Solano Chaves', 'esolano@insecurepay.fi.cr', 'AUDITOR'),
-('carlos_mora', 'carlos123', 'Carlos Mora Morales', 'cmora@correo.cr', 'CLIENTE'),
-('maria_rojas', 'maria123', 'María Rojas Soto', 'mrojas@empresa.cr', 'CLIENTE'),
-('juan_perez', 'juan123', 'Juan Pérez Delgado', 'jperez@correo.cr', 'CLIENTE');
+('admin', '$2a$10$XVEqy3xvCkjKzwUyUxgVCOwz3SNCGyAuK79R/AdIEYgydBNMiQ1uO', 'Administrador General de Sistemas', 'admin@insecurepay.fi.cr', 'ADMIN'),
+('auditor_seguridad', '$2a$10$PXGXUL1TkXakCLv9gCTm7epc5HB6Mr9iJCHYSL1BwibbtB5qnCZla', 'Lic. Esteban Solano Chaves', 'esolano@insecurepay.fi.cr', 'AUDITOR'),
+('carlos_mora', '$2a$10$DlPVOO1qjhEOX7F7gifJAusuy4IAClc9/0bkhmgCDHqZ.gboVvE.2', 'Carlos Mora Morales', 'cmora@correo.cr', 'CLIENTE'),
+('maria_rojas', '$2a$10$HFRal2TZ3HtahFcdQf0TP.DFK3dAe32QcYcjtMysGSmpXJFhUTbqO', 'María Rojas Soto', 'mrojas@empresa.cr', 'CLIENTE'),
+('juan_perez', '$2a$10$CeMN3VF8pNup7Qf3TXWuduJK7ai4ZFvStcLN1hNpfKk7eQ3CLqs1S', 'Juan Pérez Delgado', 'jperez@correo.cr', 'CLIENTE');
 
 INSERT INTO CUENTAS_BANCARIAS (usuario_id, numero_cuenta, tipo_cuenta, saldo, moneda, activa) VALUES
 (1, 'CR05015202001026458900', 'CORRIENTE', 50000000.00, 'CRC', TRUE),

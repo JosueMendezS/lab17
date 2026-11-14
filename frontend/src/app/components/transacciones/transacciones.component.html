@@ -97,8 +97,8 @@
 
     <div class="form-group">
       <label style="color: #b91c1c;">Detalle del Concepto (Renderizado HTML en Directo - Bypass DomSanitizer):</label>
-      <div style="background: #ffffff; padding: 18px; border-radius: var(--radius); border: 2px dashed #ef4444; min-height: 70px;"
-           [innerHTML]="conceptoSeguro">
+      <div style="background: #ffffff; padding: 18px; border-radius: var(--radius); border: 2px dashed #ef4444; min-height: 70px;">
+        {{ transaccionSeleccionada.conceptoHtml }}
       </div>
     </div>
   </div>
