@@ -28,14 +28,14 @@ public class CuentaController {
     @GetMapping("/{id}")
     public ResponseEntity<CuentaDto> obtenerPorId(
             @PathVariable Long id,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+            @RequestHeader("Authorization") String authHeader) {
         return ResponseEntity.ok(cuentaService.obtenerCuentaSegura(id, authHeader));
     }
 
     @GetMapping("/{id}/saldo")
     public ResponseEntity<Map<String, Object>> obtenerSaldo(
             @PathVariable Long id,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+            @RequestHeader("Authorization") String authHeader) {
         CuentaDto cuenta = cuentaService.obtenerCuentaSegura(id, authHeader);
         return ResponseEntity.ok(Map.of(
                 "cuentaId", cuenta.getId(),

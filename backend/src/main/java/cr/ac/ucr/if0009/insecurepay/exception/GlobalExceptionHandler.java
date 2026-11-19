@@ -13,7 +13,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccesoDenegadoException.class)
     public ProblemDetail accesoDenegado(AccesoDenegadoException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        pd.setTitle("Acceso no autorizado a recurso ajeno");
+        return pd;
     }
 
     @ExceptionHandler(RecursoNoEncontradoException.class)

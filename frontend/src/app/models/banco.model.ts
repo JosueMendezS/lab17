@@ -30,3 +30,11 @@ export interface TransferenciaRequest {
   conceptoHtml: string;
 }
 
+
+export interface Pagina<T> {
+  content: T[];
+  number: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}

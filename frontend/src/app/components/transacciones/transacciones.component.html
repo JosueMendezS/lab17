@@ -14,10 +14,9 @@
     <div style="margin-bottom: 24px; background: #f8fafc; padding: 18px; border-radius: var(--radius); border: 1px solid var(--border);">
       <label for="search" style="font-weight: 700;">Filtro Forense de Transacciones (Búsqueda por Concepto)</label>
       <div style="display: flex; gap: 10px; margin-top: 6px;">
-        <input type="text" id="search" [(ngModel)]="terminoBusqueda" (keyup.enter)="ejecutarBusqueda()"
+        <input type="text" id="search" [(ngModel)]="terminoBusqueda" (input)="onInputCambio(terminoBusqueda)"
                placeholder="Buscar por concepto o inyectar payload SQL..." style="flex: 1;">
-        <button type="button" class="btn btn-primary" (click)="ejecutarBusqueda()">Buscar</button>
-        <button type="button" class="btn btn-secondary" (click)="cargarTransacciones()">Restablecer</button>
+        <button type="button" class="btn btn-secondary" (click)="restablecer()">Restablecer</button>
       </div>
 
       <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
@@ -71,6 +70,12 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px;">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="anterior()" [disabled]="paginaActual === 0">Anterior</button>
+      <span>Página {{ paginaActual + 1 }} de {{ totalPaginas || 1 }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="siguiente()" [disabled]="paginaActual >= totalPaginas - 1">Siguiente</button>
     </div>
   </div>
 

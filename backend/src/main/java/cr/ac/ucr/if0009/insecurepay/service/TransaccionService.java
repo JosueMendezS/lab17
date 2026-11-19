@@ -9,6 +9,10 @@ import cr.ac.ucr.if0009.insecurepay.model.Transaccion;
 import cr.ac.ucr.if0009.insecurepay.repository.CuentaRepository;
 import cr.ac.ucr.if0009.insecurepay.repository.TransaccionRepository;
 import cr.ac.ucr.if0009.insecurepay.util.JwtUtil;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +66,17 @@ public class TransaccionService {
                 .stream()
                 .map(this::convertirADto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TransaccionDto> buscarTransaccionesPaginadas(String termino, int pagina, int tamano) {
+        Pageable pageable = PageRequest.of(Math.max(0, pagina), Math.max(1, tamano),
+                Sort.by("fecha").descending());
+        if (termino == null || termino.trim().isEmpty()) {
+            return transaccionRepository.findAll(pageable).map(this::convertirADto);
+        }
+        return transaccionRepository.buscarPorTerminoPaginado(termino.trim(), pageable)
+                .map(this::convertirADto);
     }
 
     @Transactional

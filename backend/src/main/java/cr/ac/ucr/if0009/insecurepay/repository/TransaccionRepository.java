@@ -1,6 +1,8 @@
 package cr.ac.ucr.if0009.insecurepay.repository;
 
 import cr.ac.ucr.if0009.insecurepay.model.Transaccion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,4 +21,8 @@ public interface TransaccionRepository extends JpaRepository<Transaccion, Long> 
            "       LOWER(CONCAT('%', :termino, '%')) " +
            "ORDER BY t.fecha DESC")
     List<Transaccion> buscarPorTerminoSeguro(@Param("termino") String termino);
+
+    @Query("SELECT t FROM Transaccion t " +
+           "WHERE LOWER(t.conceptoHtml) LIKE LOWER(CONCAT('%', :termino, '%'))")
+    Page<Transaccion> buscarPorTerminoPaginado(@Param("termino") String termino, Pageable pageable);
 }

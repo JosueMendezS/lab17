@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Cuenta, Transaccion, TransferenciaRequest } from '../models/banco.model';
+import { Cuenta, Pagina, Transaccion, TransferenciaRequest } from '../models/banco.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,19 +11,13 @@ export class BancoService {
 
   constructor(private http: HttpClient) {}
 
-  // Envia el JWT para que el backend valide la propiedad de los recursos
-  private authHeaders(): HttpHeaders {
-    const user = JSON.parse(localStorage.getItem('insecure_pay_user') || '{}');
-    return new HttpHeaders({ Authorization: `Bearer ${user.token}` });
-  }
-
   obtenerCuentasUsuario(usuarioId: number): Observable<Cuenta[]> {
     return this.http.get<Cuenta[]>(`${this.apiUrl}/cuentas/usuario/${usuarioId}`);
   }
 
   // [VULNERABILIDAD INTENCIONADA: IDOR en Consulta de Cuentas]
   obtenerCuentaPorId(id: number): Observable<Cuenta> {
-    return this.http.get<Cuenta>(`${this.apiUrl}/cuentas/${id}`, { headers: this.authHeaders() });
+    return this.http.get<Cuenta>(`${this.apiUrl}/cuentas/${id}`);
   }
 
   listarTodasLasCuentas(): Observable<Cuenta[]> {
@@ -47,9 +41,15 @@ export class BancoService {
     return this.http.get<Transaccion[]>(`${this.apiUrl}/transacciones/buscar?termino=${encodeURIComponent(termino)}`);
   }
 
+  buscarTransaccionesPaginadas(termino: string, pagina: number, tamano: number): Observable<Pagina<Transaccion>> {
+    return this.http.get<Pagina<Transaccion>>(`${this.apiUrl}/transacciones/buscar-seguro`, {
+      params: { termino, page: pagina, size: tamano }
+    });
+  }
+
   // [VULNERABILIDAD INTENCIONADA: IDOR en Origen de Fondos + Stored XSS]
   transferir(req: TransferenciaRequest): Observable<Transaccion> {
-    return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/transferir`, req, { headers: this.authHeaders() });
+    return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/transferir`, req);
   }
 }
 

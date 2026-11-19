@@ -3,6 +3,7 @@ package cr.ac.ucr.if0009.insecurepay.controller;
 import cr.ac.ucr.if0009.insecurepay.dto.TransaccionDto;
 import cr.ac.ucr.if0009.insecurepay.dto.TransferenciaDto;
 import cr.ac.ucr.if0009.insecurepay.service.TransaccionService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +38,14 @@ public class TransaccionController {
     @GetMapping("/buscar")
     public ResponseEntity<List<TransaccionDto>> buscarPorTermino(@RequestParam("termino") String termino) {
         return ResponseEntity.ok(transaccionService.buscarPorTermino(termino));
+    }
+
+    @GetMapping("/buscar-seguro")
+    public ResponseEntity<Page<TransaccionDto>> buscarSeguro(
+            @RequestParam(required = false) String termino,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(transaccionService.buscarTransaccionesPaginadas(termino, page, size));
     }
 
     @PostMapping("/transferir")

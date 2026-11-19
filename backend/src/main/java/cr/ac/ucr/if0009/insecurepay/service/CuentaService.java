@@ -46,10 +46,9 @@ public class CuentaService {
         boolean esPropietario = cuenta.getUsuario().getUsername()
                 .equalsIgnoreCase(usernameAutenticado);
 
-        boolean esAuditor = "auditor_seguridad".equalsIgnoreCase(usernameAutenticado)
-                || "admin".equalsIgnoreCase(usernameAutenticado);
+        boolean esAdmin = "ADMIN".equals(jwtUtil.getClaims(token).get("rol", String.class));
 
-        if (!esPropietario && !esAuditor) {
+        if (!esPropietario && !esAdmin) {
             throw new AccesoDenegadoException("Acceso no autorizado a cuenta ajena.");
         }
 
